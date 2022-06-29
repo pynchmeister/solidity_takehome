@@ -64,7 +64,7 @@ describe("erc20", function () {
       // TODO: check the Approval Event is emitted
 
       // WIP
-      // @info check this article for reference
+      // @info check this article for reference: https://www.freecodecamp.org/news/how-to-write-unit-tests-for-erc-20-ethereum-smart-contracts-abfa2c482aea/
 
       // const tokenAmount: number = 37;
       // const txResult1 = await token.connect(signers[0].address).approve(signers[0].address, tokenAmount);
