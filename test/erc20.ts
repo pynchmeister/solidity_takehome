@@ -7,6 +7,7 @@ import type { BigNumber } from "@ethersproject/bignumber";
 import { AddressZero, Zero, MaxUint256 } from "@ethersproject/constants";
 import { toBn } from "evm-bn";
 import { ERC20Errors } from "./errors";
+import { parseEther } from "ethers/lib/utils";
 
 const { provider } = waffle;
 const TEST_AMOUNT = 10;
@@ -17,11 +18,17 @@ describe("erc20", function () {
   const [wallet] = provider.getWallets();
   let signers: SignerWithAddress[];
 
+  let owner: SignerWithAddress;
+  let addr1: SignerWithAddress;
+
   before(async function () {
     signers = await ethers.getSigners();
     const deployer = new ERC20__factory(signers[0]);
     token = await deployer.deploy("token", "TKN");
     await token.mint(signers[0].address, ethers.utils.parseEther("100"));
+
+    [owner, addr1] = await ethers.getSigners();
+
 
     const transferAmount: BigNumber = toBn("5");
   });
@@ -53,19 +60,25 @@ describe("erc20", function () {
 
   describe("transferFrom functionality", async () => {
     // const transferAmount: BigNumber = toBn("5");
-    const tokenAmount: number = 37;
-    it("transferFrom successfully", async () => {
-      await token.connect(signers[0]).approve(signers[1].address, MaxUint256);
-      await expect(token.connect(signers[0]).transferFrom(signers[1].address, signers[0].address, TEST_AMOUNT))
-        .to.emit(token, "Transfer")
-        .withArgs(signers[1].address, signers[0].address, TEST_AMOUNT)
-      expect(await token.allowance(signers[1].address, signers[0].address)).to.eq(tokenAmount)
-      expect(await token.balanceOf(signers[1].address)).to.eq(TOTAL_SUPPLY - (TEST_AMOUNT))
-      expect(await token.balanceOf(signers[0].address)).to.eq(TEST_AMOUNT)
-
-      // ).to.be.revertedWith("Owner is zero address");
+    // const tokenAmount: number = 37;
+    it("TransferFrom: Should transfer", async function () {
+      await token.connect(owner).mint(addr1.address, parseEther("1"));
+      await token.connect(addr1).approve(owner.address, parseEther("0.4"));
+      await token.transferFrom(addr1.address, owner.address, parseEther("0.4"));
+      expect(await token.connect(addr1).balanceOf(addr1.address)).to.equal(parseEther("0.6"));
+      expect(await token.connect(addr1).allowance(addr1.address, owner.address)).to.equal(parseEther("0"));
     });
-
+  
+    it("TransferFrom: Should fail to transfer (Insufficient balance)", async function () {
+      await token.connect(owner).mint(addr1.address, parseEther("1"));
+      await token.connect(addr1).approve(owner.address, parseEther("0.4"));
+      await expect(token.transferFrom(addr1.address, owner.address, parseEther("5"))).to.be.revertedWith("Insufficient balance");
+    });
+  
+    it("TransferFrom: Should fail to transfer (Insufficient allowance)", async function () {
+      await token.connect(owner).mint(addr1.address, parseEther("1"));
+      await expect(token.transferFrom(addr1.address, owner.address, parseEther("1"))).to.be.revertedWith("Insufficient allowance");
+    });
   //   it("reverts when the recipient address is zero", async () => {
   //     await token.connect(signers[0]).approve(signers[1].address, transferAmount);
   //     await expect(token.connect(signers[1]).transferFrom(signers[0].address, signers[2].address, transferAmount),
