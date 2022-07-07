@@ -19,12 +19,28 @@ contract GrantFunding {
         bool claimed;
     }
 
+
+    ////////////////////// MAPPINGS /////////////////////////////
+
+    mapping(address => mapping(address => Grant)) grants;
+
+    ////////////////////// CUSTOM ERRORS /////////////////////////////
+    error GrantPreviouslyClaimed();
+    error PreviouslyGranted();
+    error NotYetClaimable(uint256 secondsRemaining);
+
+
     ////////////////////// EVENTS /////////////////////////////
-    event NewGrantCreated();
+    event NewGrantCreated(
+        address token,
+        address recipient,
+        uint256 amount,
+        uint256 unlockAtTime
+    );
 
-    event GrantRemoved();
+    event GrantRemoved(address recipient);
 
-    event GrantClaimed();
+    event GrantClaimed(address funder, address token, uint256 amount);
 
 
 
