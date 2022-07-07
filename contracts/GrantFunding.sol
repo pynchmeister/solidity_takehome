@@ -4,6 +4,10 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
 contract GrantFunding {
+    using Counters for Counters.Counter;
+
+    // this may need to be switched to a struct: http://ethereum.stackexchange.com/questions/41466/ddg#64912
+
 
     function createNewGrants(uint256 amountOfERC20Tokens, address recipient) internal returns (uint unlockTimestamp, address grantLocation) {
         // TODO

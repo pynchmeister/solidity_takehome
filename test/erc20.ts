@@ -12,8 +12,6 @@ const MAX =
 const { provider } = waffle;
 const TOTAL_SUPPLY = 10000;
 
-const initialHolder = TOTAL_SUPPLY;
-
 describe("erc20", function () {
   let token: ERC20;
   const [wallet] = provider.getWallets();
