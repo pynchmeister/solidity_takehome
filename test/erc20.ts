@@ -19,7 +19,19 @@ describe("erc20", function () {
   let signers: SignerWithAddress[];
 
   let owner: SignerWithAddress;
+  // let owner: SignerWithAddress;
   let addr1: SignerWithAddress;
+  let recipient: SignerWithAddress;
+  let spender: SignerWithAddress;
+
+  const transferAmount: BigNumber = toBn("100");
+  const tokenAmount: number = 37;
+
+  // beforeEach(async function () {
+  //   owner = this.signers.bob;
+  //   recipient = this.signers.carol;
+  //   spender = this.signers.alice;
+  // });
 
   before(async function () {
     signers = await ethers.getSigners();
@@ -27,12 +39,17 @@ describe("erc20", function () {
     token = await deployer.deploy("token", "TKN");
     await token.mint(signers[0].address, ethers.utils.parseEther("100"));
 
-    [owner, addr1] = await ethers.getSigners();
+    [owner, addr1, recipient, spender] = await ethers.getSigners();
 
 
     const transferAmount: BigNumber = toBn("5");
+
+    const allowance: BigNumber = await token.allowance(
+      signers[0].address,
+      signers[1].address,
+    );
+
   });
-  
 
   describe("transfer functionality", async () => {
 
@@ -56,42 +73,6 @@ describe("erc20", function () {
     
   });
 
-// TODO: Extrapolate sequential signers into owner, recipent spender or alice bob, carol for readability
-
-  describe("transferFrom functionality", async () => {
-    // const transferAmount: BigNumber = toBn("5");
-    // const tokenAmount: number = 37;
-    it("TransferFrom: Should transfer", async function () {
-      await token.connect(owner).mint(addr1.address, parseEther("1"));
-      await token.connect(addr1).approve(owner.address, parseEther("0.4"));
-      await token.transferFrom(addr1.address, owner.address, parseEther("0.4"));
-      expect(await token.connect(addr1).balanceOf(addr1.address)).to.equal(parseEther("0.6"));
-      expect(await token.connect(addr1).allowance(addr1.address, owner.address)).to.equal(parseEther("0"));
-    });
-  
-    it("TransferFrom: Should fail to transfer (Insufficient balance)", async function () {
-      await token.connect(owner).mint(addr1.address, parseEther("1"));
-      await token.connect(addr1).approve(owner.address, parseEther("0.4"));
-      await expect(token.transferFrom(addr1.address, owner.address, parseEther("5"))).to.be.revertedWith("Insufficient balance");
-    });
-  
-    it("TransferFrom: Should fail to transfer (Insufficient allowance)", async function () {
-      await token.connect(owner).mint(addr1.address, parseEther("1"));
-      await expect(token.transferFrom(addr1.address, owner.address, parseEther("1"))).to.be.revertedWith("Insufficient allowance");
-    });
-  //   it("reverts when the recipient address is zero", async () => {
-  //     await token.connect(signers[0]).approve(signers[1].address, transferAmount);
-  //     await expect(token.connect(signers[1]).transferFrom(signers[0].address, signers[2].address, transferAmount),
-  //     ).to.be.revertedWith("ERC20: Transfer Recipient Zero Address");
-  //   });
-  // });
-
-    // it("reverts when the owner's balance is not sufficient", async () => {
-
-    // });
-
-    // reverts when the owner is zero address
-
   describe("approve functionality", async () => {
     const tokenAmount: number = 37;
     it("approves successfully ", async () => {
@@ -109,6 +90,77 @@ describe("erc20", function () {
         .to.emit(token, "Approval")
         .withArgs(signers[0].address, signers[1].address, tokenAmount);
     });
+});
+
+describe("transferFrom functionality", async () => {
+
+context("when the owner is a zero address", function () {
+  it("reverts", async function () {
+    // await token.connect(spender).approve(signers[2].address, tokenAmount);
+    await expect(
+      token.connect(spender).transferFrom(AddressZero, recipient.address, transferAmount),
+    ).to.be.revertedWith("ERC20: TransferSenderZeroAddress");
+  });
+});
+
+context("when the owner is not a zero address", function () {
+  context("when the recipient is a zero address", function () {
+    beforeEach(async function () {
+      await token.connect(owner).approve(spender.address, transferAmount);
+    });
+
+    it("reverts", async function () {
+      await expect(
+        token.connect(spender).transferFrom(owner.address, AddressZero, ethers.utils.parseEther("5")),
+      ).to.be.revertedWith("ERC20: TransferRecipientZeroAddress");
+    });
+  });
+
+  context("when the recipient is not the zero address", function () {
+    context("when the owner does not have enough balance", function () {
+      it("reverts", async function () {
+        await expect(
+          token.connect(spender).transferFrom(owner.address, recipient.address, transferAmount),
+        ).to.be.revertedWith(ERC20Errors.InsufficientBalance);
+      });
+    });
+
+    context("when the owner has enough balance", function () {
+      beforeEach(async function () {
+        await token.mint(owner.address, transferAmount);
+      });
+    
+      context("When the spender does not have enough allowance", function () {
+        it("reverts", async function () {
+          await expect(
+            token.connect(spender).transferFrom(owner.address, recipient.address, transferAmount),
+          ).to.be.revertedWith(ERC20Errors.InsufficientAllowance);
+        });
+      });
+
+      context("when the spender has enough allowance", function () {
+        beforeEach(async function () {
+          await token.connect(owner).approve(spender.address, transferAmount);
+        });
+
+        it("emits a Transfer event", async function () {
+          await expect(
+            token.connect(spender).transferFrom(owner.address, recipient.address, transferAmount),
+          )
+          .to.emit(token, "Transfer")
+          .withArgs(owner.address, recipient.address, transferAmount);
+        });
+
+        it("emits an Approval event", async function () {
+          await expect(
+            token.connect(spender).transferFrom(owner.address, recipient.address, transferAmount),
+          )
+          .to.emit(token, "Approval")
+          .withArgs(owner.address, spender.address, Zero);
+        });
+      });
+    });
+  });
 });
 });
 });
