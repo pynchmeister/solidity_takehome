@@ -9,9 +9,15 @@ import { toBn } from "evm-bn";
 import { ERC20Errors } from "./errors";
 import { parseEther } from "ethers/lib/utils";
 
+const MAX =
+  "115792089237316195423570985008687907853269984665640564039457584007913129639935";
+
 const { provider } = waffle;
 const TEST_AMOUNT = 10;
 const TOTAL_SUPPLY = 10000;
+const transferAmount: BigNumber = toBn("100");
+
+const initialHolder = TOTAL_SUPPLY;
 
 describe("erc20", function () {
   let token: ERC20;
@@ -20,11 +26,16 @@ describe("erc20", function () {
 
   let owner: SignerWithAddress;
   // let owner: SignerWithAddress;
-  let addr1: SignerWithAddress;
+  let addr1;
+  let addr2;
   let recipient: SignerWithAddress;
   let spender: SignerWithAddress;
 
-  const transferAmount: BigNumber = toBn("100");
+  let user1: string;
+  let user1Acc: SignerWithAddress;
+  let user2Acc: SignerWithAddress;
+  let user2: string;
+  // const transferAmount: BigNumber = toBn("100");
   const tokenAmount: number = 37;
 
   // beforeEach(async function () {
@@ -41,6 +52,8 @@ describe("erc20", function () {
 
     [owner, addr1, recipient, spender] = await ethers.getSigners();
 
+    user1Acc = signers[1];
+    user1 = await user1Acc.getAddress();
 
     const transferAmount: BigNumber = toBn("5");
 
@@ -48,8 +61,13 @@ describe("erc20", function () {
       signers[0].address,
       signers[1].address,
     );
+    
+    [owner, addr1, addr2] = await ethers.getSigners();
 
   });
+
+  
+
 
   describe("transfer functionality", async () => {
 
@@ -93,74 +111,60 @@ describe("erc20", function () {
 });
 
 describe("transferFrom functionality", async () => {
-
-context("when the owner is a zero address", function () {
-  it("reverts", async function () {
-    // await token.connect(spender).approve(signers[2].address, tokenAmount);
-    await expect(
-      token.connect(spender).transferFrom(AddressZero, recipient.address, transferAmount),
-    ).to.be.revertedWith("ERC20: TransferSenderZeroAddress");
-  });
-});
-
-context("when the owner is not a zero address", function () {
-  context("when the recipient is a zero address", function () {
-    beforeEach(async function () {
-      await token.connect(owner).approve(spender.address, transferAmount);
-    });
-
-    it("reverts", async function () {
-      await expect(
-        token.connect(spender).transferFrom(owner.address, AddressZero, ethers.utils.parseEther("5")),
-      ).to.be.revertedWith("ERC20: TransferRecipientZeroAddress");
-    });
+  it("transfers using transferFrom", async () => {
+    await token.connect(addr1).approve(owner.address, ethers.utils.parseEther("10"));
+    await token.transfer(addr1.address, ethers.utils.parseEther("10"));
+    await token.transferFrom(addr1.address, addr2.address, ethers.utils.parseEther("10"));
+    expect(await token.balanceOf(addr2.address)).to.equal(ethers.utils.parseEther("10"));
+    //     const balanceBefore = await token.balanceOf(user2);
+//     await token.connect(user1Acc).transferFrom(user1, user2, 1);
+//     expect(await token.balanceOf(user2)).to.be.eq(balanceBefore.add(1));
   });
 
-  context("when the recipient is not the zero address", function () {
-    context("when the owner does not have enough balance", function () {
-      it("reverts", async function () {
-        await expect(
-          token.connect(spender).transferFrom(owner.address, recipient.address, transferAmount),
-        ).to.be.revertedWith(ERC20Errors.InsufficientBalance);
-      });
-    });
+//   it("should not transfer beyond balance", async () => {
+//     await expect(
+//       token.connect(user1Acc).transfer(user2, 100)
+//     ).to.be.revertedWith("ERC20: Insufficient balance");
+//     await expect(
+//       token.connect(user1Acc).transferFrom(user1, user2, 100)
+//     ).to.be.revertedWith("ERC20: Insufficient balance");
+//   });
 
-    context("when the owner has enough balance", function () {
-      beforeEach(async function () {
-        await token.mint(owner.address, transferAmount);
-      });
-    
-      context("When the spender does not have enough allowance", function () {
-        it("reverts", async function () {
-          await expect(
-            token.connect(spender).transferFrom(owner.address, recipient.address, transferAmount),
-          ).to.be.revertedWith(ERC20Errors.InsufficientAllowance);
-        });
-      });
+//   it("approves to increase allowance", async () => {
+//     const allowanceBefore = await token.allowance(user1, user2);
+//     await token.connect(user1Acc).approve(user2, 1);
+//     expect(await token.allowance(user1, user2)).to.be.eq(
+//       allowanceBefore.add(1)
+//     );
+//   });
 
-      context("when the spender has enough allowance", function () {
-        beforeEach(async function () {
-          await token.connect(owner).approve(spender.address, transferAmount);
-        });
+  // describe("with a positive allowance", async () => {
+  //   beforeEach(async () => {
+  //     await token.connect(signers[1]).approve(user2, 10);
+  //   });
 
-        it("emits a Transfer event", async function () {
-          await expect(
-            token.connect(spender).transferFrom(owner.address, recipient.address, transferAmount),
-          )
-          .to.emit(token, "Transfer")
-          .withArgs(owner.address, recipient.address, transferAmount);
-        });
+  //   it("transfers ether using transferFrom and allowance", async () => {
+  //     const balanceBefore = await token.balanceOf(user2);
+  //     await token.connect(user2Acc).transferFrom(user1,user2, 1);
+  //     expect(await token.balanceOf(signers[1].address)).to.be.eq(balanceBefore.add(1));
+  //   });
 
-        it("emits an Approval event", async function () {
-          await expect(
-            token.connect(spender).transferFrom(owner.address, recipient.address, transferAmount),
-          )
-          .to.emit(token, "Approval")
-          .withArgs(owner.address, spender.address, Zero);
-        });
-      });
-    });
+  //   it("should not transfer beyond allowance", async () => {
+  //     await expect(
+  //       token.connect(user2Acc).transferFrom(user1, user2, 20)
+  //     ).to.be.revertedWith("ERC20: Insufficient approval");
+  //   });
+  // });
+
+  // describe("with a maximum allowance", async () => {
+  //   beforeEach(async () => {
+  //     await token.connect(user1Acc).approve(user2, MAX);
+  //   });
+
+  //   it("does not decrease allowance using transferFrom", async () => {
+  //     await token.connect(user2Acc).transferFrom(user1, user2, 1);
+  //     expect(await erc20.allowance(user1, user2)).to.be.eq(MAX);
+  //   });
   });
-});
-});
+// });
 });
