@@ -29,6 +29,7 @@ contract GrantFunding {
     error NotYetClaimable(uint256 secondsRemaining);
     error UnlockTimeInvalid();
     error FailedERC20Transfer();
+    error GrantNotFound();
 
 
     ////////////////////// EVENTS /////////////////////////////
@@ -87,15 +88,24 @@ contract GrantFunding {
             }
             
 
-    function removeGrant(address grantLocation) internal {
+    function removeGrant(address recipient) external {
+        // @TODO justify the use of external keyword
         // @info ensure the recipient hasn't unlocked collection  
+        Grant storage grant = grants[msg.sender][recipient];
+        if (grant.claimed || grant.start == 0) {
+            revert GrantNotFound();
+        }
 
-        // TODO
-        emit GrantRemoved();
+        bool success = IERC20(grant.token).transfer(msg.sender, grant.amount);
+        if (!success) {
+            revert FailedERC20Transfer();
+        }
 
+        grant.start = 0;
+        emit GrantRemoved(recipient);
     }
 
-    function claimGrant(address grantLocation) external {
+    function claimGrant(address funder) external {
         // @info recipient must claim a grant after the unlock timestamp
         // reverts if before unlock timestamp
 
