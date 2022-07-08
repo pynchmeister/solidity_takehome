@@ -108,9 +108,24 @@ contract GrantFunding {
     function claimGrant(address funder) external {
         // @info recipient must claim a grant after the unlock timestamp
         // reverts if before unlock timestamp
-
         // TODO: transfer funds out of contract 
+        Grant storage grant = grants[funder][msg.sender];
+        if (grant.start == 0) {
+            revert GrantNotFound();
+        }
+        if (grant.claimed) {
+            revert GrantPreviouslyClaimed();
+        }
+        if (grant.unlockAt > block.timestamp) {
+            revert NotYetClaimable(grant.unlockAt - block.timestamp);
+        }
 
-        emit GrantClaimed();
+        bool success  = IERC20(grant.token).transfer(msg.sender, grant.amount);
+        if (!success) {
+            revert FailedERC20Transfer();
+        }
+        
+        grant.claimed = true;
+        emit GrantClaimed(funder, grant.token, grant.amount);
     }
 }
