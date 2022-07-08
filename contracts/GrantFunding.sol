@@ -6,9 +6,6 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 contract GrantFunding {
     using Counters for Counters.Counter;
 
-    // this may need to be switched to a struct: http://ethereum.stackexchange.com/questions/41466/ddg#64912
-
-
     ////////////////////// STRUCTS /////////////////////////////
 
     struct Grant {
@@ -25,9 +22,13 @@ contract GrantFunding {
     mapping(address => mapping(address => Grant)) grants;
 
     ////////////////////// CUSTOM ERRORS /////////////////////////////
+
+    // @TODO refer to this article to put a bow on custom errors: https://blog.soliditylang.org/2021/04/21/custom-errors/
     error GrantPreviouslyClaimed();
     error PreviouslyGranted();
     error NotYetClaimable(uint256 secondsRemaining);
+    error UnlockTimeInvalid();
+    error FailedERC20Transfer();
 
 
     ////////////////////// EVENTS /////////////////////////////
@@ -42,15 +43,49 @@ contract GrantFunding {
 
     event GrantClaimed(address funder, address token, uint256 amount);
 
-
+    event GrantUnlockAltered(address recipient, uint256 originalTime, uint256 newTime);
 
     ////////////////////// FUNCTIONS /////////////////////////////
 
-    function createNewGrants(uint256 amountOfERC20Tokens, address recipient) internal returns (uint unlockTimestamp, address grantLocation) {
-        // TODO
+    // @dev may be able to remove 'address token'
+    // @dev may need to change function visibility 
+    function createNewGrant(
+        address token, 
+        uint256 amountOfERC20Tokens, 
+        address recipient,
+        uint256 unlockAtTime
+        // ) external returns (uint unlockTimestamp, address grantLocation) {
+           ) external {
+            uint256 start = block.timestamp;
+            require(unlockAtTime >= start, "Invalid unlock time");
+            if (unlockAtTime >= start) {
+                revert UnlockTimeInvalid();
+            }
+            Grant storage grant = grants[msg.sender][recipient];
 
-        emit NewGrantCreated();
-    } 
+            if(!grant.claimed && grant.start > 0) {
+                revert PreviouslyGranted();
+            }
+
+            bool success = IERC20(token).transferFrom(
+                msg.sender,
+                address(this),
+                unlockAtTime
+            );
+
+            if (!success) {
+                revert FailedERC20Transfer();
+            }
+
+            grant.token = token;
+            grant.amount = amountOfERC20Tokens;
+            grant.start = start;
+            grant.unlockAt = unlockAtTime;
+            grant.claimed = false;
+
+            emit NewGrantCreated(token, recipient, amountOfERC20Tokens, unlockAtTime);
+            }
+            
 
     function removeGrant(address grantLocation) internal {
         // @info ensure the recipient hasn't unlocked collection  
