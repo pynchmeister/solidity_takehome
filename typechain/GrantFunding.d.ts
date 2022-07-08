@@ -22,13 +22,38 @@ import { TypedEventFilter, TypedEvent, TypedListener } from "./commons";
 interface GrantFundingInterface extends ethers.utils.Interface {
   functions: {
     "claimGrant(address)": FunctionFragment;
+    "createNewGrant(address,uint256,address,uint256)": FunctionFragment;
+    "removeGrant(address)": FunctionFragment;
   };
 
   encodeFunctionData(functionFragment: "claimGrant", values: [string]): string;
+  encodeFunctionData(
+    functionFragment: "createNewGrant",
+    values: [string, BigNumberish, string, BigNumberish]
+  ): string;
+  encodeFunctionData(functionFragment: "removeGrant", values: [string]): string;
 
   decodeFunctionResult(functionFragment: "claimGrant", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "createNewGrant",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "removeGrant",
+    data: BytesLike
+  ): Result;
 
-  events: {};
+  events: {
+    "GrantClaimed(address,address,uint256)": EventFragment;
+    "GrantRemoved(address)": EventFragment;
+    "GrantUnlockAltered(address,uint256,uint256)": EventFragment;
+    "NewGrantCreated(address,address,uint256,uint256)": EventFragment;
+  };
+
+  getEvent(nameOrSignatureOrTopic: "GrantClaimed"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "GrantRemoved"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "GrantUnlockAltered"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "NewGrantCreated"): EventFragment;
 }
 
 export class GrantFunding extends Contract {
@@ -76,57 +101,221 @@ export class GrantFunding extends Contract {
 
   functions: {
     claimGrant(
-      grantLocation: string,
+      funder: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
 
     "claimGrant(address)"(
-      grantLocation: string,
+      funder: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    createNewGrant(
+      token: string,
+      amountOfERC20Tokens: BigNumberish,
+      recipient: string,
+      unlockAtTime: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    "createNewGrant(address,uint256,address,uint256)"(
+      token: string,
+      amountOfERC20Tokens: BigNumberish,
+      recipient: string,
+      unlockAtTime: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    removeGrant(
+      recipient: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<ContractTransaction>;
+
+    "removeGrant(address)"(
+      recipient: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<ContractTransaction>;
   };
 
   claimGrant(
-    grantLocation: string,
+    funder: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   "claimGrant(address)"(
-    grantLocation: string,
+    funder: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  createNewGrant(
+    token: string,
+    amountOfERC20Tokens: BigNumberish,
+    recipient: string,
+    unlockAtTime: BigNumberish,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  "createNewGrant(address,uint256,address,uint256)"(
+    token: string,
+    amountOfERC20Tokens: BigNumberish,
+    recipient: string,
+    unlockAtTime: BigNumberish,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  removeGrant(
+    recipient: string,
+    overrides?: Overrides & { from?: string | Promise<string> }
+  ): Promise<ContractTransaction>;
+
+  "removeGrant(address)"(
+    recipient: string,
     overrides?: Overrides & { from?: string | Promise<string> }
   ): Promise<ContractTransaction>;
 
   callStatic: {
-    claimGrant(grantLocation: string, overrides?: CallOverrides): Promise<void>;
+    claimGrant(funder: string, overrides?: CallOverrides): Promise<void>;
 
     "claimGrant(address)"(
-      grantLocation: string,
+      funder: string,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    createNewGrant(
+      token: string,
+      amountOfERC20Tokens: BigNumberish,
+      recipient: string,
+      unlockAtTime: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    "createNewGrant(address,uint256,address,uint256)"(
+      token: string,
+      amountOfERC20Tokens: BigNumberish,
+      recipient: string,
+      unlockAtTime: BigNumberish,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
+    removeGrant(recipient: string, overrides?: CallOverrides): Promise<void>;
+
+    "removeGrant(address)"(
+      recipient: string,
       overrides?: CallOverrides
     ): Promise<void>;
   };
 
-  filters: {};
+  filters: {
+    GrantClaimed(
+      funder: null,
+      token: null,
+      amount: null
+    ): TypedEventFilter<
+      [string, string, BigNumber],
+      { funder: string; token: string; amount: BigNumber }
+    >;
+
+    GrantRemoved(
+      recipient: null
+    ): TypedEventFilter<[string], { recipient: string }>;
+
+    GrantUnlockAltered(
+      recipient: null,
+      originalTime: null,
+      newTime: null
+    ): TypedEventFilter<
+      [string, BigNumber, BigNumber],
+      { recipient: string; originalTime: BigNumber; newTime: BigNumber }
+    >;
+
+    NewGrantCreated(
+      token: null,
+      recipient: null,
+      amount: null,
+      unlockAtTime: null
+    ): TypedEventFilter<
+      [string, string, BigNumber, BigNumber],
+      {
+        token: string;
+        recipient: string;
+        amount: BigNumber;
+        unlockAtTime: BigNumber;
+      }
+    >;
+  };
 
   estimateGas: {
     claimGrant(
-      grantLocation: string,
+      funder: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
 
     "claimGrant(address)"(
-      grantLocation: string,
+      funder: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    createNewGrant(
+      token: string,
+      amountOfERC20Tokens: BigNumberish,
+      recipient: string,
+      unlockAtTime: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    "createNewGrant(address,uint256,address,uint256)"(
+      token: string,
+      amountOfERC20Tokens: BigNumberish,
+      recipient: string,
+      unlockAtTime: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    removeGrant(
+      recipient: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<BigNumber>;
+
+    "removeGrant(address)"(
+      recipient: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<BigNumber>;
   };
 
   populateTransaction: {
     claimGrant(
-      grantLocation: string,
+      funder: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
 
     "claimGrant(address)"(
-      grantLocation: string,
+      funder: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    createNewGrant(
+      token: string,
+      amountOfERC20Tokens: BigNumberish,
+      recipient: string,
+      unlockAtTime: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    "createNewGrant(address,uint256,address,uint256)"(
+      token: string,
+      amountOfERC20Tokens: BigNumberish,
+      recipient: string,
+      unlockAtTime: BigNumberish,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    removeGrant(
+      recipient: string,
+      overrides?: Overrides & { from?: string | Promise<string> }
+    ): Promise<PopulatedTransaction>;
+
+    "removeGrant(address)"(
+      recipient: string,
       overrides?: Overrides & { from?: string | Promise<string> }
     ): Promise<PopulatedTransaction>;
   };

@@ -25,9 +25,6 @@ describe("erc20", function () {
 
   let user1: string;
   let user1Acc: SignerWithAddress;
-  const tokenAmount: number = 37;
-
- 
 
   before(async function () {
     signers = await ethers.getSigners();
