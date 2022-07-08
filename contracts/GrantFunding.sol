@@ -24,6 +24,7 @@ contract GrantFunding {
     ////////////////////// CUSTOM ERRORS /////////////////////////////
 
     // @TODO refer to this article to put a bow on custom errors: https://blog.soliditylang.org/2021/04/21/custom-errors/
+    
     error GrantPreviouslyClaimed();
     error PreviouslyGranted();
     error NotYetClaimable(uint256 secondsRemaining);
