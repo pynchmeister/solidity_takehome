@@ -1,4 +1,4 @@
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.10;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
@@ -60,7 +60,7 @@ contract GrantFunding {
            ) external {
             uint256 start = block.timestamp;
             require(unlockAtTime >= start, "Invalid unlock time");
-            if (unlockAtTime >= start) {
+            if (unlockAtTime < start) {
                 revert UnlockTimeInvalid();
             }
             Grant storage grant = grants[msg.sender][recipient];
@@ -130,8 +130,8 @@ contract GrantFunding {
         emit GrantClaimed(funder, grant.token, grant.amount);
     }
 
-    // @TODO: allows an address (when approved to claim a grant on behalf of the grant creator)
-    function claimGrantOnBehalfOf(address claimer, address funder) external {
+    // // @TODO: allows an address (when approved to claim a grant on behalf of the grant creator)
+    // function claimGrantOnBehalfOf(address claimer, address funder) external {
 
-    } 
+    // } 
 }

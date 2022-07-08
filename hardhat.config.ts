@@ -21,7 +21,15 @@ const config: HardhatUserConfig = {
       },
     ]
   },
-  mocha: { timeout: 0 }
+  mocha: { timeout: 0 },
+  networks: {
+    hardhat: {
+      gas: 12000000,
+      gasPrice: 10000000000,
+      blockGasLimit: 0x1fffffffffffff,
+      allowUnlimitedContractSize: true,
+    }
+  },
 };
 
 export default config;
