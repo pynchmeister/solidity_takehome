@@ -129,4 +129,9 @@ contract GrantFunding {
         grant.claimed = true;
         emit GrantClaimed(funder, grant.token, grant.amount);
     }
+
+    // @TODO: allows an address (when approved to claim a grant on behalf of the grant creator)
+    function claimGrantOnBehalfOf(address claimer, address funder) external {
+
+    } 
 }
