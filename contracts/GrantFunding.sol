@@ -135,5 +135,7 @@ contract GrantFunding {
     // // @TODO: allows an address (when approved to claim a grant on behalf of the grant creator)
     // function claimGrantOnBehalfOf(address claimer, address funder) external {
 
+// claim or release on behalf of someone else 
+//adding access control (function tied to (msg.sender)
     // } 
 }
