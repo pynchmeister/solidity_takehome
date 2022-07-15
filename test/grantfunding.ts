@@ -45,9 +45,9 @@ describe("GrantFunding Vault", function () {
         it("creates a new grant successfully", async () => {
             await token.approve(grantFunding.address,ethers.utils.parseEther("7"));
             // @dev must use signer[0] so that msg.sender is referenced
-            const tx = await grantFunding.createNewGrant(token.address, ethers.utils.parseEther("7"), signers[0].address, initialUnlockTime.unix(), {gasLimit: 10000000000});
+            const tx = await grantFunding.createNewGrant(token.address, ethers.utils.parseEther("7"), signers[1].address, initialUnlockTime.unix(), {gasLimit: 10000000000});
             
-            await expect(tx).to.emit(grantFunding, "NewGrantCreated").withArgs(token.address, signers[0].address, ethers.utils.parseEther("7"), initialUnlockTime.unix());
+            await expect(tx).to.emit(grantFunding, "NewGrantCreated").withArgs(token.address, signers[1].address, ethers.utils.parseEther("7"), initialUnlockTime.unix());
         });
 
         it("removes grant", async () => {
@@ -58,24 +58,25 @@ describe("GrantFunding Vault", function () {
             //console.log(await token.balanceOf(grantFunding.address));
             //console.log(await token.allowance(signers[0].address, grantFunding.address));
 
-            const tx  = await grantFunding.removeGrant(signers[0].address, {gasLimit: 10000000000});
+            const tx  = await grantFunding.removeGrant(signers[1].address, {gasLimit: 10000000000});
 
             await expect(tx)
                 .to.emit(grantFunding, "GrantRemoved")
-                .withArgs(signers[0].address);
+                .withArgs(signers[1].address);
 
     });
 
-        // it("claims grant successfully", async () => {
-        //     const unlockTime = moment().add(1, 'day')
-        //     await token.approve(grantFunding.address, ethers.utils.parseEther("10"));
-        //     await grantFunding.createNewGrant(token.address, ethers.utils.parseEther("6"), signers[1].address, initialUnlockTime.unix());
-        //     await increaseBlockTimestamp(provider, unlockTime.unix());
-        //     const tx = await grantFunding.connect(signers[1]).claimGrant(signers[0].address);
-
-        //     expect(tx)
-        //         .to.emit(grantFunding, "GrantClaimed")
-        //         .withArgs(signers[0].address, token.address, ethers.utils.parseEther("6"));
-        // });
+    describe("grant claim functionality", async () => {
+        it("claims grant successfully", async () => {
+            const unlockTime = moment().add(1, 'day')
+            await token.approve(grantFunding.address, ethers.utils.parseEther("10"));
+            await grantFunding.createNewGrant(token.address, ethers.utils.parseEther("6"), signers[2].address, initialUnlockTime.unix());
+            await increaseBlockTimestamp(provider, unlockTime.unix());
+            const tx = await grantFunding.connect(signers[2]).claimGrant(signers[0].address)
+            expect(tx)
+                .to.emit(grantFunding, "GrantClaimed")
+                .withArgs(signers[0].address, token.address, ethers.utils.parseEther("6"));
+        });
+    });
 });
 });
