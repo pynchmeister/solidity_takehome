@@ -1,15 +1,15 @@
-import { expect } from "chai";
-import moment from "moment";
 import { ethers, waffle } from "hardhat";
-// import { ERC20 } from "../typechain/ERC20";
-// import { ERC20__factory } from "../typechain/factories/ERC20__factory";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
+
 import { ERC20 } from "../typechain/ERC20";
 import { ERC20__factory } from "../typechain/factories/ERC20__factory";
 import { GrantFunding } from "../typechain/GrantFunding";
 import { GrantFunding__factory } from "../typechain/factories/GrantFunding__factory";
 import { MockProvider } from "ethereum-waffle";
-
+// import { ERC20 } from "../typechain/ERC20";
+// import { ERC20__factory } from "../typechain/factories/ERC20__factory";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
+import { expect } from "chai";
+import moment from "moment";
 
 const { provider } = waffle;
 
@@ -30,34 +30,41 @@ describe("GrantFunding Vault", function () {
     before(async function () {
         signers = await ethers.getSigners();
         const deployer = new ERC20__factory(signers[0]);
+        
         token = await deployer.deploy("token", "TKN");
         await token.mint(signers[0].address, ethers.utils.parseEther("100"));
-
+        
         const grantFundingDeployer = new GrantFunding__factory(signers[0]);
         grantFunding = await grantFundingDeployer.deploy();
+        
+        await token.transfer(grantFunding.address, ethers.utils.parseEther("50")); // needed to give the grantfunding contract some Token balance for grants
     });
 
-    describe("grant creation functionality", async () => {
+    describe("grant creation and removal functionality", async () => {
         let initialUnlockTime = moment().add(1, "day");
         it("creates a new grant successfully", async () => {
             await token.approve(grantFunding.address,ethers.utils.parseEther("7"));
-            const tx = await grantFunding.createNewGrant(token.address, ethers.utils.parseEther("7"), signers[1].address, initialUnlockTime.unix());
+            // @dev must use signer[0] so that msg.sender is referenced
+            const tx = await grantFunding.createNewGrant(token.address, ethers.utils.parseEther("7"), signers[0].address, initialUnlockTime.unix(), {gasLimit: 10000000000});
             
-            expect(tx)
-                .to.emit(grantFunding, "NewGrantCreated")
-                .withArgs(token.address, ethers.utils.parseEther("14"), signers[1].address, initialUnlockTime.unix());
+            await expect(tx).to.emit(grantFunding, "NewGrantCreated").withArgs(token.address, signers[0].address, ethers.utils.parseEther("7"), initialUnlockTime.unix());
         });
+
+        it("removes grant", async () => {
+            await token.approve(grantFunding.address, ethers.utils.parseEther("6"), {gasLimit: 10000000000});
+
+            //console.log(await token.allowance(grantFunding.address, signers[0].address));
+            //console.log(await token.balanceOf(signers[0].address));
+            //console.log(await token.balanceOf(grantFunding.address));
+            //console.log(await token.allowance(signers[0].address, grantFunding.address));
+
+            const tx  = await grantFunding.removeGrant(signers[0].address, {gasLimit: 10000000000});
+
+            await expect(tx)
+                .to.emit(grantFunding, "GrantRemoved")
+                .withArgs(signers[0].address);
+
     });
-
-    //     it("removes grant", async () => {
-    //         const unlockTime = moment().add(1, 'day')
-    //         const tx  = await grantFunding.removeGrant(signers[1].address);
-
-    //         expect(tx)
-    //             .to.emit(grantFunding, "GrantRemoved")
-    //             .withArgs(signers[1].address);
-
-    // });
 
         // it("claims grant successfully", async () => {
         //     const unlockTime = moment().add(1, 'day')
@@ -70,4 +77,5 @@ describe("GrantFunding Vault", function () {
         //         .to.emit(grantFunding, "GrantClaimed")
         //         .withArgs(signers[0].address, token.address, ethers.utils.parseEther("6"));
         // });
+});
 });

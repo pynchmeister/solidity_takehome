@@ -93,11 +93,13 @@ contract GrantFunding {
         // @TODO justify the use of external keyword
         // @info ensure the recipient hasn't unlocked collection  
         Grant storage grant = grants[msg.sender][recipient];
-        if (grant.claimed || grant.start == 0) {
+        if (grant.start == 0) {
             revert GrantNotFound();
         }
-
-        bool success = IERC20(grant.token).transfer(msg.sender, grant.amount);
+        if (grant.claimed) {
+            revert GrantPreviouslyClaimed();
+        }
+        bool success = IERC20(grant.token).transfer(recipient, grant.amount);
         if (!success) {
             revert FailedERC20Transfer();
         }
